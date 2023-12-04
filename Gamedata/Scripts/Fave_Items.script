@@ -1,0 +1,62 @@
+--Steps to work out
+--Export the currently fave items into a .file under \appdata
+--On game load load the data from that file and apply the fave item list to the current character
+
+
+local junk_itm = {}
+local favorite_itms = {}
+
+local function save_state(mdata)
+    mdata.rax_favorite_itms = favorite_itms
+    mdata.rax_junk_itms = junk_itms
+end
+
+local function load_state(mdata)
+    favorite_itms = mdata.rax_favorite_itms or favorite_itms
+	junk_itms = mdata.rax_junk_itms or junk_itms
+end
+
+-- Create the table for the faves to go into(?)
+local exp_fave = {
+    "favorite_itms"
+    "junk_itms"
+}
+
+-- Set the fave/junk items, pulled from the Sorting Plus (RavenAscendent)
+
+function set_favorite(sec,state)
+	if state then
+        favorite_itms[sec] = "favorites" -- add it to the list if it isn't there.
+        junk_itms[sec] = nil --remove it from junk, these lists are mutaly exclusive 
+    else
+        favorite_itms[sec] = nil
+    end
+end
+
+function set_junk(sec, state)
+    -- same things but for junk list
+if state then
+    junk_itms[sec] = "junk"
+    favorite_itms[sec] = nil
+else
+    junk_itms[sec] = nil
+end
+end
+
+-- Exporting the items(?) though i feel like this is going to do the physcial items and not just the ID's... i dont want this to GIVE items, just flag fave's
+function export_items(sec)
+for sec, in exp_fave 
+    if favorite_itms then
+        axr_main.config:_value("favorites" .. sec)
+    end
+    if junk_itm[obj:section()] then
+        axr_main.config:_value("junk" .. sec)
+    end
+end
+
+--Import
+
+function Import_items(sec)
+    if axr_main.config:section_exists("favorites" .. sec) then
+         
+
