@@ -1,5 +1,5 @@
 --Steps to work out
---Export the currently fave items into a .file under \appdata
+--Export the currently fave items into a .ltx under
 --On game load load the data from that file and apply the fave item list to the current character
 
 
@@ -11,52 +11,61 @@ local function save_state(mdata)
     mdata.rax_junk_itms = junk_itms
 end
 
-local function load_state(mdata)
-    favorite_itms = mdata.rax_favorite_itms or favorite_itms
-	junk_itms = mdata.rax_junk_itms or junk_itms
-end
+local get_ammo = utils_item.get_ammo 
+local set_favorite = zzz_rax_sortingplus_mcm.set_favorite
+globals_general_file_ammo = "PersistantFavorites\\Ammo.ltx"
 
--- Create the table for the faves to go into(?)
-local exp_fave = {
-    "favorite_itms"
-    "junk_itms"
-}
+Local fuction load_config (globals_general_file_ammo)
 
--- Set the fave/junk items, pulled from the Sorting Plus (RavenAscendent)
 
-function set_favorite(sec,state)
-	if state then
-        favorite_itms[sec] = "favorites" -- add it to the list if it isn't there.
-        junk_itms[sec] = nil --remove it from junk, these lists are mutaly exclusive 
-    else
-        favorite_itms[sec] = nil
+function manage_ammo_favorites()
+    for k, ammo in pairs(favorite_itms) do
+        local ammo_list = get_ammo(nil, true)
+        for ammo, _ in pairs(favorite_itms) do
+            set_favorite(ammo, true)
+        end
     end
 end
 
-function set_junk(sec, state)
-    -- same things but for junk list
-if state then
-    junk_itms[sec] = "junk"
-    favorite_itms[sec] = nil
-else
-    junk_itms[sec] = nil
-end
-end
-
--- Exporting the items(?) though i feel like this is going to do the physcial items and not just the ID's... i dont want this to GIVE items, just flag fave's
-function export_items(sec)
-for sec, in exp_fave 
-    if favorite_itms then
-        axr_main.config:_value("favorites" .. sec)
+local function saveTable(favorite_itms, file)
+    local program = ini_file_ex(file, true)
+        program.ini:w_string("favorite_Ammo")
+            if table and favorite_itms.ammo then 
+                for ammo, _ in pairs (favorite_itms.ammo) do
+                    local temp = string.format ("%F")
+                        round (ctrl_value.ammo)
+                    program.ini:w_string("favorite_Ammo")
+                end
+            end
+        end
+    
     end
-    if junk_itm[obj:section()] then
-        axr_main.config:_value("junk" .. sec)
+    program:save()
+end
+
+
+function manage_ammo_junk()
+    for k, ammo in pairs(junk_itms) do
+        local ammo_list = get_ammo(nil, true)
+        for ammo, _ in pairs(junk_itms) do
+            set_junk(ammo, true)
+        end
     end
 end
 
---Import
-
-function Import_items(sec)
-    if axr_main.config:section_exists("favorites" .. sec) then
-         
+local function saveTable(junk_itms, file)
+    local program = ini_file_ex(file, true)
+        program.ini:w_string("Junk_Ammo")
+            if table and junk_itms.ammo then 
+                for ammo, _ in pairs (junk_itms.ammo) do
+                    local temp = string.format ("%F")
+                        round (ctrl_value.ammo)
+                    program.ini:w_string("Junk_Ammo")
+                end
+            end
+        end
+    
+    end
+    program:save()
+end
 
