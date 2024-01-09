@@ -1,30 +1,29 @@
---Steps to work out
---Export the currently fave items into a .ltx under
---On game load load the data from that file and apply the fave item list to the current character
+--Export/Import scripts are completely made by RavenAscendant. The most credit i can take is for the idea and testing to make sure it works.
 
 function export_favs()
-    local mdata = alife_storage_manager.get_state()
-    if not mdata.rax_favorite_itms then return end
-    local fav_string = ""
-    for k, v in pairs(mdata.rax_favorite_itms) do
-      fav_string = fav_string .. k .. ", "
-    end
-    axr_main.config:w_string_ex("venoms_exported_data", "sp_favs", fav_string)
-    axr_main.config:save()
+  local mdata = alife_storage_manager.get_state()
+  if not mdata.rax_favorite_itms then return end
+  local fav_string = ""
+  for k, v in pairs(mdata.rax_favorite_itms) do
+    fav_string = fav_string .. k .. ", "
   end
-  
-  function import_favs()
-    local fav_string = axr_main.config:r_string_ex("venoms_exported_data", "sp_favs") or ""
-    local fav_list = str_explode(fav_string, ",") or {}
-    for i, v in ipairs(fav_list) do
-      if v ~= "" and not zzz_rax_sortingplus_mcm.is_junk(v) then --setting as fav unsets junk, this check prioritizing  preserving existing junk list entries in curent save over importing favorotes from exported list, omit if you want the export list favorites to win
-        zzz_rax_sortingplus_mcm.set_favorite(v)
-      end
-    end
-  end
+  axr_main.config:w_value("venoms_exported_data", "sp_favs", fav_string)
+  axr_main.config:save()
+end
 
-  function on_game_start()
-	  RegisterScriptCallback("on_game_load",import_favs)
-    RegisterScriptCallback("actor_on_first_update", import_favs)
-    RegisterScriptCallback("actor_on_before_death", export_favs)
+function import_favs()
+  local fav_string = axr_main.config:r_string_ex("venoms_exported_data", "sp_favs") or ""
+  local fav_list = str_explode(fav_string, ",") or {}
+  for i, v in ipairs(fav_list) do
+    printf ("venom: %s", v)
+    if v ~= "" and not zzz_rax_sortingplus_mcm.is_junk(v) then --setting as fav unsets junk, this check prioritizing  preserving existing junk list entries in curent save over importing favorotes from exported list, omit if you want the export list favorites to win
+      zzz_rax_sortingplus_mcm.set_favorite(v, true)
+    end
+  end
+end
+
+function on_game_start()
+  RegisterScriptCallback("on_game_load", import_favs)
+  RegisterScriptCallback("actor_on_first_update", import_favs)
+  RegisterScriptCallback("actor_on_before_death", export_favs)
 end
