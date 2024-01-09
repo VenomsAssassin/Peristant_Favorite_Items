@@ -25,6 +25,6 @@ function export_favs()
 
   function on_game_start()
 	  --RegisterScriptCallback("on_game_load",import_favs)
-    RegisterScriptCallback("actor_on_first_update", import_favs)
+    --RegisterScriptCallback("actor_on_first_update", import_favs)
     RegisterScriptCallback("actor_on_before_death", export_favs)
 end
