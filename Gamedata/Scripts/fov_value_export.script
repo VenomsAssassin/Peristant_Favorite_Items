@@ -5,14 +5,14 @@ function export_fov()
     local weapon = db.actor:active_item()
     local scope = utils_item.get_attached_scope(weapon)
     local mdata = mdata.snk_saved_hud_fov
+    local ini = ini_file("Gamedata\\configs\\items\\hud_fov_values\\fov_custom_values.ltx")
     if not not weapon then return end
     local saved_custom = ""
     for v in pairs(mdata) do
         saved_custom = saved_custom .. v ..
     end
-    --Somehow need to turn this into Gamedata\configs\items\hud_fov_values\fov_custom_values.ltx
-    axr_main.config:w_value(weapon:section(), scope, saved_custom)
-    axr_main.config:save()
+    ini:w_value(weapon:section(), scope, saved_custom)
+    ini:save()
   end
 
   function on_game_start()
