@@ -2,21 +2,17 @@ Export form here mdata.snk_saved_hud_fov
 into Gamedata\configs\items\hud_fov_values\fov_custom_values.ltx using 
 
 function export_fov()
-    local weapon = db.actor:active_item()
-    local scope = utils_item.get_attached_scope(weapon)
     local mdata = mdata.snk_saved_hud_fov
     local ini = ini_file("Gamedata\\configs\\items\\hud_fov_values\\fov_custom_values.ltx")
     if not not weapon then return end
     local saved_custom = ""
-    for v in pairs(mdata) do
+    for v in pairs(mdata.snk_saved_hud_fov) do
         saved_custom = saved_custom .. v ..
     end
-    ini:w_value(weapon:section(), scope, saved_custom)
+    ini:w_value([weapon:section()], scope, saved_custom)
     ini:save()
   end
 
   function on_game_start()
-    RegisterScriptCallback("on_game_load", import_favs)
-    RegisterScriptCallback("actor_on_first_update", import_favs)
     RegisterScriptCallback("actor_on_before_death", export_fov)
   end
