@@ -21,8 +21,15 @@ function import_favs()
   end
 end
 
+function drop_table()
+  local fav_string = nil
+  axr_main.config:w_value("fave_exported_data", "sp_favs", fav_string)
+  axr_main.config:save()
+end
+
 function on_game_start()
   RegisterScriptCallback("on_game_load", import_favs)
   RegisterScriptCallback("actor_on_first_update", import_favs)
+  RegisterScriptCallback("on_before_save_input", drop_table)
   RegisterScriptCallback("actor_on_before_death", export_favs)
 end

@@ -4,7 +4,7 @@ into Gamedata\configs\items\hud_fov_values\fov_custom_values.ltx using
 function export_fov()
     local mdata = mdata.snk_saved_hud_fov
     local ini = ini_file("Gamedata\\configs\\items\\hud_fov_values\\fov_custom_values.ltx")
-    if not not weapon then return end
+    if not weapon then return end
     local saved_custom = ""
     for v in pairs(mdata.snk_saved_hud_fov) do
         saved_custom = saved_custom .. v ..
