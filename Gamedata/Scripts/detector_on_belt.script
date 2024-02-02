@@ -42,7 +42,7 @@ local function actor_on_update()
     local vol_noise_lowest = 0.7
 
     for i=1,#artifact do
-		local obj = level.object_by_id(artifact[i].id)
+		local obj = IsArtefact or obj:get_artefact()
 		if obj and (not emission) then
 			local dist = db.actor:position():distance_to(obj:position())
 			if pass_range and dist < artifact[i].dist then
