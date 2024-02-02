@@ -1,0 +1,66 @@
+local snd_on = sound_object("detectors\\RF\\on")
+local snd_off = sound_object("detectors\\RF\\off")
+local snd_noise = sound_object("detectors\\RF\\noise")
+local snd_white_noise = sound_object("detectors\\RF\\noise")
+local d_state = false
+local vol_n = 0
+function sound_trigger(state)
+	if state and (not d_state) then
+		snd_on:play(db.actor, 0, sound_object.s2d)
+		d_state = true
+		vol_n = 0.7
+		snd_noise.volume = vol_n
+	elseif (not state) and d_state then
+		snd_off:play(db.actor, 0, sound_object.s2d)
+		d_state = false
+		vol_n = 0
+		snd_noise.volume = vol_n
+	end
+end
+
+
+local function actor_on_update()
+
+	local obj_det_belt = db.actor:item_in_slot(9)
+    local artifact = get_artifact_nearby()
+    
+	if obj_det_belt then
+		obj_det_belt = db.actor:item_in_slot(9)
+	else
+		obj_det_belt = db.actor:active_detector()
+	end
+	
+	if not (obj_det_belt and obj_det:section() == _device and obj_det:condition() >= obj_det:power_critical()) then
+		sound_trigger(false)
+		return
+	end
+	sound_trigger(true)
+
+    emission = GetEvent("surge", "state") or GetEvent("psi_storm", "state")
+
+    local vol_noise_lowest = 0.7
+
+    for i=1,#artifact do
+		local obj = level.object_by_id(artifact[i].id)
+		if obj and (not emission) then
+			local dist = db.actor:position():distance_to(obj:position())
+			if pass_range and dist < artifact[i].dist then
+				local id = obj:id()
+				local sec = obj:section()
+				local clsid = obj:clsid()
+				
+				local dist_ratio = dist / artifact[i].dist
+				local vol_range = get_vol_range(artifact[i].freq)
+				
+				local vol_signal = clamp( (1-dist_ratio) * vol_range , 0 , 1) or 0
+				local vol_noise = clamp( dist_ratio * vol_range , 0.2 , 0.7 ) or 0.7
+				vol_noise_lowest = (vol_noise < vol_noise_lowest) and vol_noise or vol_noise_lowest
+            end
+        end
+    end
+    vol_n = vol_noise_lowest
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+end
