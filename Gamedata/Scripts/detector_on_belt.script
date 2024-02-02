@@ -20,10 +20,9 @@ end
 
 
 local function actor_on_update()
-
+    local artefact = {}
 	local obj_det_belt = db.actor:item_in_slot(9)
-    local artifact = obj:get_artefact() or IsArtefact
-    local obj = IsArtefact("")
+    local obj = level.object_by_id(artefact[i].id)
     
 	if obj_det_belt then
 		obj_det_belt = db.actor:item_in_slot(9)
@@ -41,7 +40,7 @@ local function actor_on_update()
 
     local vol_noise_lowest = 0.7
 
-    for i=1,#artifact do
+    for i=1,#artefact do
 		if obj and (not emission) then
 			local dist = db.actor:position():distance_to(obj:position())
         end
