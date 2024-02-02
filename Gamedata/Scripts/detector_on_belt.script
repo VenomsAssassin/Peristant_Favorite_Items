@@ -22,8 +22,7 @@ end
 local function actor_on_update()
 
 	local obj_det_belt = db.actor:item_in_slot(9)
-    local pick_up_range = ini_sys:r_string_ex(obj:section(), "af_vis_radius")
-    local artifact = get_artifact_nearby(pick_up_range)
+    local artifact = obj:get_artefact() or IsArtefact
     
 	if obj_det_belt then
 		obj_det_belt = db.actor:item_in_slot(9)
@@ -45,7 +44,7 @@ local function actor_on_update()
 		local obj = IsArtefact or obj:get_artefact()
 		if obj and (not emission) then
 			local dist = db.actor:position():distance_to(obj:position())
-			if pass_range and dist < artifact[i].dist then
+			if artifact[i].dist then
 				local id = obj:id()
 				local sec = obj:section()
 				local clsid = obj:clsid()
