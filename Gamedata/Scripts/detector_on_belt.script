@@ -8,10 +8,19 @@ local art_database = {
 artefact = {}
 artefact_target = {}
 
-function add_target(id, freq, dist)
-	freq = freq or get_random_freq()
+function add_target(id, dist)
 	dist = dist or 200
-	artefact_target[id] = { freq = freq , dist = dist }
+	artefact_target[id] = { dist = dist }
+end
+
+function create_art_table(id, cls, dist_pos, dist, snd)
+	return {
+		id       = id,
+		clsid    = cls,
+		dist_pos = dist_pos,
+		dist     = dist,
+		snd      = snd,
+	}
 end
 
 function scan_online_sources()
@@ -35,15 +44,15 @@ function scan_online_sources()
 					--[TB MODIFIED]
 					if string.find(sec,"quest_tb_package_") then
 						print_dbg("found tb_package | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { tb_beep } )
+						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { tb_beep } )
 					-- Default beeps
 					else
 						print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
+						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
 					end
 				else
 					print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-					active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
+					active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
 				end
 			-- Common RF Sources
 			elseif art_database[cls] and (dist_pos < art_database[cls].dist) then
@@ -53,18 +62,18 @@ function scan_online_sources()
 				if (cls == clsid.inventory_box_s) or (cls == clsid.inventory_box) then
 					local _level = level.name()
 					if RF_stashes[_level] and RF_stashes[_level][id] then
-						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, RF_stashes[_level][id], art_database[cls].dist, art_database[cls].snd )
+						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, RF_stashes[_level][id], art_database[cls].dist, art_database[cls].snd )
 					end
 
 				-- Artefacts
 				elseif (cls == clsid.artefact) or (cls == clsid.artefact_s) then
 					if art_database[sec] then
-						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, art_database[sec].freq, art_database[cls].dist, art_database[cls].snd )
+						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, art_database[sec].freq, art_database[cls].dist, art_database[cls].snd )
 					end
 				
 				-- Anything else
 				elseif art_database[cls] and art_database[cls].freq then
-					active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, art_database[cls].freq, art_database[cls].dist, art_database[cls].snd )
+					active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, art_database[cls].freq, art_database[cls].dist, art_database[cls].snd )
 				end
 			end
 		end
@@ -73,9 +82,32 @@ end
 
 local snd_on = sound_object("detectors\\RF\\on")
 local snd_off = sound_object("detectors\\RF\\off")
+
 local snd_noise = sound_object("detectors\\RF\\noise")
-local d_state = false
-local vol_n = 0
+local snd_white_noise = sound_object("detectors\\RF\\noise")
+local snd_emission = {}
+for i=1,8 do snd_emission[i] = sound_object("detectors\\RF\\emission\\noise_emission_" .. tostring(i)) end
+local snd_random = {}
+for i=1,13 do snd_random[i] = sound_object("detectors\\RF\\random\\random_" .. tostring(i)) end
+local snd_talk = {}
+for i=1,33 do snd_talk[i] = sound_object("detectors\\RF\\talk\\talk_" .. tostring(i)) end
+
+local path_beep = "detectors\\RF\\beep_02"
+local path_random = {}
+for i=1,13 do path_random[i] = "detectors\\RF\\random\\random_" .. tostring(i) end
+
+local beep_snd = sound_object(path_beep)
+local tg_beep = 0
+local min_gap = 400
+local beep_gap = 0
+local tg_cache = 0
+local min_flash_time = 100
+local flash_time = 0
+
+local tg_tb_flash = 0
+tb_flash_time = 0
+tb_in_range = false
+tb_sound_object = false
 
 function sound_trigger(state)
 	if state and (not d_state) then
@@ -92,35 +124,84 @@ function sound_trigger(state)
 end
 
 
-
 local function actor_on_update()
-	local obj_det = db.actor:item_in_slot(9) or db.actor:active_detector()
-    local artefact = clsid.artefact or clsid.artefact_s
 
+    local obj_det = db.actor:item_in_slot(9) or db.actor:active_detector()
+    local artefact = clsid.artefact or clsid.artefact_s
 	
 	if not (obj_det and obj_det:section() == _device and obj_det:condition() >= obj_det:power_critical()) then
 		sound_trigger(false)
 		return
 	end
 	sound_trigger(true)
+	
+	-- Emissions
+	emission = GetEvent("surge", "state") or GetEvent("psi_storm", "state")
+	
+	-- Scan for any nearby radio wave source
+	local tg = time_global()
+	if (tg > tg_scan) then
+		tg_scan = tg + scan_time
+		scan_online_sources()
+	end
 
-    emission = GetEvent("surge", "state") or GetEvent("psi_storm", "state")
+	local vol_noise_lowest = 0.7
 
-    local vol_noise_lowest = 0.7
-
-    for i=1,#artefact do
-        local obj = level.object_by_id(clsid.artefact[i]) or level.object_by_id(clsid.artefact_s[i])
+	-- [Coverdrave]: Play beeps
+	for i=1,#artefact do
+		local obj = level.object_by_id(artefact[i].id)
 		if obj and (not emission) then
 			local dist = db.actor:position():distance_to(obj:position())
+			if pass_range and dist < artefact[i].dist then
+				local id = obj:id()
+				local sec = obj:section()
+				local clsid = obj:clsid()
+				
+				local dist_ratio = dist / artefact[i].dist
+				local vol_range = get_vol_range(artefact[i].freq)
+				
+				local vol_signal = clamp( (1-dist_ratio) * vol_range , 0 , 1) or 0
+				local vol_noise = clamp( dist_ratio * vol_range , 0.2 , 0.7 ) or 0.7
+				vol_noise_lowest = (vol_noise < vol_noise_lowest) and vol_noise or vol_noise_lowest
+				
+				-- Quest targets, using new beeping method. TB's packages only send custom beeps from his script.
+				if RF_targets[id] and not string.find(sec,"quest_tb_package_") then
+					beep_gap = calc_beep_gap(dist, artefact[i].dist)
+					local timeglobal = time_global()
+					if (timeglobal > tg_beep) then
+						tg_beep = timeglobal + beep_gap
+						flash_time = calc_flash_time(dist, artefact[i].dist)
+						beep_snd:play(db.actor, 0, sound_object.s2d)
+					end
+				-- All other sources, using old beeping method
+				elseif art_database[clsid] then
+					if (not snds[i]) or (snds[i] and (not snds[i]:playing())) or refresh then
+						local snd_paths = artefact[i].snd
+						snds[i] = sound_object(snd_paths[math.random(#snd_paths)])
+						snds[i]:play(db.actor, 0, sound_object.s2d)
+						print_dbg("snds[%s] - #s: %s", i, #snd_paths)
+					end
+				end
+			end
+		end
+	end
+	vol_n = vol_noise_lowest
 
-			local dist_ratio = dist / artefact[i].dist
-			local vol_range = get_vol_range(artefact[i].freq)
-            local vol_signal = clamp( (1-dist_ratio) * vol_range , 0 , 1) or 0
-            local vol_noise = clamp( dist_ratio * vol_range , 0.2 , 0.7 ) or 0.7
-            vol_noise_lowest = (vol_noise < vol_noise_lowest) and vol_noise or vol_noise_lowest
-        end
-    end
-    vol_n = vol_noise_lowest
+	-- White noise sound
+	if (not snd_noise:playing()) then
+		snd_noise = emission and snd_emission[math.random(#snd_emission)] or snd_white_noise
+		snd_noise:play(db.actor, 0, sound_object.s2d)
+	end
+	snd_noise.volume = vol_n
+	refresh = false
+	
+	-- Random sounds
+	if (tg > tg_random) then
+		tg_random = tg + math.random(20,40)*1000
+		local snd_random_now = (math.random(100) > 50) and snd_random[math.random(#snd_random)] or snd_talk[math.random(#snd_talk)]
+		snd_random_now:play(db.actor, 0, sound_object.s2d)
+		snd_random_now.volume = math.random(10,100)/100
+	end
 end
 
 local function actor_on_item_take(obj)
