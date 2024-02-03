@@ -95,7 +95,7 @@ end
 
 local function actor_on_update()
 	local obj_det = db.actor:item_in_slot(9) or db.actor:active_detector()
-    local artefact = clsid.artefact[i] or clsid.artefact_s[i]
+    local artefact = clsid.artefact or clsid.artefact_s
 
 	
 	if not (obj_det and obj_det:section() == _device and obj_det:condition() >= obj_det:power_critical()) then
