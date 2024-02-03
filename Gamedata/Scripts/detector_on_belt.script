@@ -21,7 +21,6 @@ end
 
 local function actor_on_update()
 	local obj_det = db.actor:item_in_slot(9) or db.actor:active_detector()
-    local obj = level.object_by_id(clsid.artefact)
     local artefact = clsid.artefact or clsid.artefact_s
 
 	
@@ -36,8 +35,15 @@ local function actor_on_update()
     local vol_noise_lowest = 0.7
 
     for i=1,#artefact do
+        local obj = level.object_by_id(clsid.artefact[i]) or level.object_by_id(clsid.artefact_s[i])
 		if obj and (not emission) then
 			local dist = db.actor:position():distance_to(obj:position())
+
+			local dist_ratio = dist / artefact[i].dist
+			local vol_range = get_vol_range(artefact[i].freq)
+            local vol_signal = clamp( (1-dist_ratio) * vol_range , 0 , 1) or 0
+            local vol_noise = clamp( dist_ratio * vol_range , 0.2 , 0.7 ) or 0.7
+            vol_noise_lowest = (vol_noise < vol_noise_lowest) and vol_noise or vol_noise_lowest
         end
     end
     vol_n = vol_noise_lowest
