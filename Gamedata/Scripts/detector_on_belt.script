@@ -21,7 +21,8 @@ end
 
 local function actor_on_update()
 	local obj_det_belt = db.actor:item_in_slot(9)
-    local obj = level.object_by_id(artefact[i].id)
+    local obj = level.object_by_id(clsid.artefact)
+    local artefact = clsid.artefact or clsid.artefact_s
     
 	if obj_det_belt then
 		obj_det_belt = db.actor:item_in_slot(9)
