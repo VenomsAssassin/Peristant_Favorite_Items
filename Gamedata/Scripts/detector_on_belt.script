@@ -165,7 +165,7 @@ local function actor_on_update()
 				vol_noise_lowest = (vol_noise < vol_noise_lowest) and vol_noise or vol_noise_lowest
 				
 				-- Quest targets, using new beeping method. TB's packages only send custom beeps from his script.
-				if RF_targets[id] and not string.find(sec,"quest_tb_package_") then
+				if artefact_target[id] and not string.find(sec,"quest_tb_package_") then
 					beep_gap = calc_beep_gap(dist, artefact[i].dist)
 					local timeglobal = time_global()
 					if (timeglobal > tg_beep) then
