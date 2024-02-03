@@ -39,23 +39,7 @@ function scan_online_sources()
 			local dist_pos = pos:distance_to(obj:position())
 			
 			-- Specific Targets (Quests)
-			if artefact_target[id] and (dist_pos < artefact_target[id].dist) then
-				if TB_RF_Receiver_Packages then
-					--[TB MODIFIED]
-					if string.find(sec,"quest_tb_package_") then
-						print_dbg("found tb_package | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { tb_beep } )
-					-- Default beeps
-					else
-						print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-						active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
-					end
-				else
-					print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
-					active_sources[#active_sources + 1] = create_art_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
-				end
-			-- Common RF Sources
-			elseif art_database[cls] and (dist_pos < art_database[cls].dist) then
+			if art_database[cls] and (dist_pos < art_database[cls].dist) then
 				print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
 
 				-- Stash
