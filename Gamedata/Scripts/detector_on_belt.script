@@ -1,3 +1,76 @@
+local art_database = {
+
+    [clsid.artefact] 		  = { dist = 50 , snd = path_random },
+    [clsid.artefact_s] 		  = { dist = 50 , snd = path_random },
+
+}
+
+artefact = {}
+artefact_target = {}
+
+function add_target(id, freq, dist)
+	freq = freq or get_random_freq()
+	dist = dist or 200
+	artefact_target[id] = { freq = freq , dist = dist }
+end
+
+function scan_online_sources()
+	print_dbg("scan_online_sources")
+	local pos = db.actor:position()
+	local st = db.storage
+	
+	-- Search
+	empty_table(active_sources)
+	for i=1,65534 do
+		local obj = st[i] and st[i].object or level.object_by_id(i)
+		if obj then
+			local id = obj:id()
+			local sec = obj:section()
+			local cls = obj:clsid()
+			local dist_pos = pos:distance_to(obj:position())
+			
+			-- Specific Targets (Quests)
+			if artefact_target[id] and (dist_pos < artefact_target[id].dist) then
+				if TB_RF_Receiver_Packages then
+					--[TB MODIFIED]
+					if string.find(sec,"quest_tb_package_") then
+						print_dbg("found tb_package | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
+						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { tb_beep } )
+					-- Default beeps
+					else
+						print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
+						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
+					end
+				else
+					print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
+					active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, artefact_target[id].freq, artefact_target[id].dist, { path_beep } )
+				end
+			-- Common RF Sources
+			elseif art_database[cls] and (dist_pos < art_database[cls].dist) then
+				print_dbg("found active_source | section: %s - clsid: %s - distance: %s", sec, cls, dist_pos)
+
+				-- Stash
+				if (cls == clsid.inventory_box_s) or (cls == clsid.inventory_box) then
+					local _level = level.name()
+					if RF_stashes[_level] and RF_stashes[_level][id] then
+						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, RF_stashes[_level][id], art_database[cls].dist, art_database[cls].snd )
+					end
+
+				-- Artefacts
+				elseif (cls == clsid.artefact) or (cls == clsid.artefact_s) then
+					if art_database[sec] then
+						active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, art_database[sec].freq, art_database[cls].dist, art_database[cls].snd )
+					end
+				
+				-- Anything else
+				elseif art_database[cls] and art_database[cls].freq then
+					active_sources[#active_sources + 1] = create_rf_table( id, cls, dist_pos, art_database[cls].freq, art_database[cls].dist, art_database[cls].snd )
+				end
+			end
+		end
+	end
+end
+
 local snd_on = sound_object("detectors\\RF\\on")
 local snd_off = sound_object("detectors\\RF\\off")
 local snd_noise = sound_object("detectors\\RF\\noise")
@@ -17,6 +90,7 @@ function sound_trigger(state)
 		snd_noise.volume = vol_n
 	end
 end
+
 
 
 local function actor_on_update()
@@ -49,6 +123,15 @@ local function actor_on_update()
     vol_n = vol_noise_lowest
 end
 
+local function actor_on_item_take(obj)
+	local id = obj:id()
+	if artefact_target[id] then
+		clear_target(id)
+		scan_online_sources()
+	end
+end
+
 function on_game_start()
+    RegisterScriptCallback("actor_on_item_take",actor_on_item_take)
     RegisterScriptCallback("actor_on_update", actor_on_update)
 end
